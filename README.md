@@ -8,7 +8,8 @@ O objetivo é estruturar dados de forma reprodutível para permitir a análise d
 
 ## 📁 Estrutura do Projeto
 
-```text
+```
+text
 ├── datasets/
 │   ├── raw/          # Dados brutos (não versionados)
 │   └── processed/    # Dados processados (não versionados)
