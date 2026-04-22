@@ -1,14 +1,33 @@
+```gitignore
+# Ambiente virtual
 venv/
+
+# Python
 __pycache__/
 *.pyc
 
+# Dados (CRÍTICO)
 datasets/raw/
 datasets/processed/
 
+# Outputs
 outputs/
 
+# Arquivos grandes
 *.mp4
 *.avi
 *.mov
+*.mkv
+*.tar.gz
+*.zip
+
+# Imagens (evita subir frames)
 *.jpg
+*.jpeg
 *.png
+
+# Logs
+*.log
+
+# Sistema
+.DS_Store

@@ -3,6 +3,7 @@ import shutil
 import argparse
 from pathlib import Path
 import pandas as pd
+import numpy as np
 
 
 IMAGE_EXTS = {".jpg", ".jpeg", ".png"}
@@ -55,31 +56,74 @@ def main():
         frames = list_frames(seq_dir)
         total_frames = len(frames)
 
+        label_path = labels_root / f"{seq_name}.npy"
+        label_exists = label_path.exists()
+
+        anomaly_frames_total = None
+        anomaly_ratio = None
+        sampled_anomaly_frames = None
+        sampled_anomaly_ratio = None
+
+        labels = None
+        if label_exists:
+            labels = np.load(label_path)
+
+            # garante vetor 1D
+            labels = np.array(labels).reshape(-1)
+
+            # se tamanho não casar, vamos usar o mínimo para evitar quebrar
+            effective_len = min(len(labels), total_frames)
+
+            anomaly_frames_total = int(np.sum(labels[:effective_len] > 0))
+            anomaly_ratio = anomaly_frames_total / effective_len if effective_len > 0 else 0.0
+        else:
+            effective_len = total_frames
+
         if total_frames == 0:
             metadata_rows.append({
                 "sequence": seq_name,
                 "frames_total": 0,
                 "frames_saved": 0,
                 "stride": args.stride,
-                "label_exists": (labels_root / f"{seq_name}.npy").exists()
+                "label_exists": label_exists,
+                "anomaly_frames_total": anomaly_frames_total,
+                "anomaly_ratio": anomaly_ratio,
+                "sampled_anomaly_frames": sampled_anomaly_frames,
+                "sampled_anomaly_ratio": sampled_anomaly_ratio,
             })
             continue
 
         saved_count = 0
+        sampled_label_values = []
 
-        for idx, frame_path in enumerate(frames):
+        for idx, frame_path in enumerate(frames[:effective_len]):
             if idx % args.stride == 0:
                 out_name = f"frame_{saved_count:06d}{frame_path.suffix.lower()}"
                 out_path = seq_out_dir / out_name
                 shutil.copy2(frame_path, out_path)
+
+                if labels is not None:
+                    sampled_label_values.append(int(labels[idx] > 0))
+
                 saved_count += 1
+
+        if labels is not None and len(sampled_label_values) > 0:
+            sampled_anomaly_frames = int(np.sum(sampled_label_values))
+            sampled_anomaly_ratio = sampled_anomaly_frames / len(sampled_label_values)
+        elif labels is not None:
+            sampled_anomaly_frames = 0
+            sampled_anomaly_ratio = 0.0
 
         metadata_rows.append({
             "sequence": seq_name,
             "frames_total": total_frames,
             "frames_saved": saved_count,
             "stride": args.stride,
-            "label_exists": (labels_root / f"{seq_name}.npy").exists()
+            "label_exists": label_exists,
+            "anomaly_frames_total": anomaly_frames_total,
+            "anomaly_ratio": anomaly_ratio,
+            "sampled_anomaly_frames": sampled_anomaly_frames,
+            "sampled_anomaly_ratio": sampled_anomaly_ratio,
         })
 
     df = pd.DataFrame(metadata_rows)

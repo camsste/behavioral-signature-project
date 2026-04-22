@@ -1,0 +1,4 @@
+sequence,frames_total,frames_saved,stride,label_exists,anomaly_frames_total,anomaly_ratio,sampled_anomaly_frames,sampled_anomaly_ratio
+01_0014,265,89,3,True,76,0.28679245283018867,25,0.2808988764044944
+01_0016,337,113,3,True,91,0.27002967359050445,30,0.26548672566371684
+01_002,482,161,3,True,0,0.0,0,0.0
