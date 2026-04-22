@@ -17,18 +17,23 @@ text
 │   └── preprocess/   # Scripts de pré-processamento
 ├── outputs/          # Resultados e experimentos
 └── config/           # Configurações (planejado)
+```
 
 ## Ambiente
 
 1. Criar e ativar ambiente virtual:
-
+   
+```
 python3 -m venv venv
 source venv/bin/activate
+```
 
 2. Instalar dependências:
-
+   
+```
 pip install -r requirements.txt
 Pré-processamento de vídeos
+```
 
 2.1 Para datasets baseados em vídeo:
 
