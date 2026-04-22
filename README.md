@@ -19,6 +19,8 @@ text
 └── config/           # Configurações (planejado)
 ```
 
+---
+
 ## Ambiente
 
 1. Criar e ativar ambiente virtual:
@@ -68,6 +70,8 @@ datasets/processed/
     metadata.csv
 ```
 
+---
+
 ## Próximos passos
 
 1. Validar preprocessamento em datasets reais
@@ -75,6 +79,8 @@ datasets/processed/
 3. Extrair sinais comportamentais (movimento, postura, etc.)
 4. Construir representação temporal do comportamento
 5. Avaliar padrões e anomalias
+
+---
 
 ## Observações
 - Datasets não são versionados no repositório
