@@ -1,0 +1,4 @@
+motion_mean,motion_std,motion_max,high_motion_frames,pairs_processed,class,sequence,frames_total,frames_saved,stride,label_exists,anomaly_frames_total,anomaly_ratio,sampled_anomaly_frames,sampled_anomaly_ratio,motion_signal_strength,motion_signal_normalized,behavior_intensity,behavior_type
+0.6285164952278137,0.4574012756347656,1.722866177558899,36,88,frames,01_0014,265,89,3,True,76,0.2867924528301886,25,0.2808988764044944,2.8087839484214783,0.03191799941388043,alta_intensidade,anomalo
+0.5833485722541809,0.2988049685955047,1.5648918151855469,42,112,frames,01_0016,337,113,3,True,91,0.2700296735905044,30,0.2654867256637168,2.4470453560352325,0.021848619250314578,media_intensidade,anomalo
+0.4863339364528656,0.1312921494245529,0.8954887390136719,63,160,frames,01_002,482,161,3,True,0,0.0,0,0.0,1.5131148248910904,0.009456967655569314,baixa_intensidade,normal

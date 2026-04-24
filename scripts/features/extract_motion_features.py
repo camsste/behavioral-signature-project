@@ -1,117 +1,99 @@
 import cv2
 import numpy as np
+from pathlib import Path
 import pandas as pd
 import argparse
-from pathlib import Path
-from tqdm import tqdm
 
 
-def compute_optical_flow(prev_gray, curr_gray):
+def compute_optical_flow(prev_frame, next_frame):
+    prev_gray = cv2.cvtColor(prev_frame, cv2.COLOR_BGR2GRAY)
+    next_gray = cv2.cvtColor(next_frame, cv2.COLOR_BGR2GRAY)
+
     flow = cv2.calcOpticalFlowFarneback(
-        prev_gray,
-        curr_gray,
+        prev_gray, next_gray,
         None,
-        pyr_scale=0.5,
-        levels=3,
-        winsize=15,
-        iterations=3,
-        poly_n=5,
-        poly_sigma=1.2,
-        flags=0
+        0.5, 3, 15, 3, 5, 1.2, 0
     )
-    magnitude, angle = cv2.cartToPolar(flow[..., 0], flow[..., 1])
-    return magnitude, angle
+
+    magnitude, _ = cv2.cartToPolar(flow[..., 0], flow[..., 1])
+    return magnitude
 
 
-def extract_sequence_features(sequence_path: Path):
-    frame_files = sorted(sequence_path.glob("*.jpg"))
+def process_sequence(frame_paths):
+    motions = []
 
-    if len(frame_files) < 2:
-        return None
+    for i in range(len(frame_paths) - 1):
+        f1 = cv2.imread(str(frame_paths[i]))
+        f2 = cv2.imread(str(frame_paths[i + 1]))
 
-    prev = cv2.imread(str(frame_files[0]))
-    if prev is None:
-        return None
-
-    prev_gray = cv2.cvtColor(prev, cv2.COLOR_BGR2GRAY)
-
-    mean_magnitudes = []
-    max_magnitudes = []
-
-    for frame_path in frame_files[1:]:
-        curr = cv2.imread(str(frame_path))
-        if curr is None:
+        if f1 is None or f2 is None:
             continue
 
-        curr_gray = cv2.cvtColor(curr, cv2.COLOR_BGR2GRAY)
-        magnitude, _ = compute_optical_flow(prev_gray, curr_gray)
+        mag = compute_optical_flow(f1, f2)
+        motions.append(np.mean(mag))
 
-        mean_magnitudes.append(float(np.mean(magnitude)))
-        max_magnitudes.append(float(np.max(magnitude)))
-
-        prev_gray = curr_gray
-
-    if len(mean_magnitudes) == 0:
+    if len(motions) == 0:
         return None
 
-    mean_magnitudes = np.array(mean_magnitudes)
-    max_magnitudes = np.array(max_magnitudes)
-
-    threshold = np.mean(mean_magnitudes)
+    motions = np.array(motions)
 
     return {
-        "motion_mean": float(np.mean(mean_magnitudes)),
-        "motion_std": float(np.std(mean_magnitudes)),
-        "motion_max": float(np.max(max_magnitudes)),
-        "high_motion_frames": int(np.sum(mean_magnitudes > threshold)),
-        "pairs_processed": int(len(mean_magnitudes)),
+        "motion_mean": float(np.mean(motions)),
+        "motion_std": float(np.std(motions)),
+        "motion_max": float(np.max(motions)),
+        "high_motion_frames": int(np.sum(motions > np.mean(motions))),
+        "pairs_processed": len(motions)
     }
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Extração de sinais de movimento com optical flow")
-    parser.add_argument("--input_dir", type=str, required=True, help="Diretório com as sequências de frames")
-    parser.add_argument("--output_path", type=str, required=True, help="Caminho do CSV de saída")
-    args = parser.parse_args()
+def extract_features(input_dir, output_path):
+    input_dir = Path(input_dir)
 
-    input_dir = Path(args.input_dir)
-    output_path = Path(args.output_path)
+    results = []
 
-    if not input_dir.exists():
-        raise FileNotFoundError(f"Pasta não encontrada: {input_dir}")
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    rows = []
-
-    for sequence in tqdm(sorted(input_dir.iterdir()), desc="Extracting motion features"):
-        if not sequence.is_dir():
+    for class_dir in input_dir.iterdir():
+        if not class_dir.is_dir():
             continue
 
-        features = extract_sequence_features(sequence)
-        if features is None:
-            continue
+        class_name = class_dir.name
 
-        features["sequence"] = sequence.name
-        rows.append(features)
+        for sequence_dir in class_dir.iterdir():
+            if not sequence_dir.is_dir():
+                continue
 
-    if len(rows) == 0:
-        print("Nenhuma sequência processada.")
-        return
+            frames = sorted(
+                list(sequence_dir.glob("*.png")) +
+                list(sequence_dir.glob("*.jpg"))
+            )
 
-    df = pd.DataFrame(rows)
-    df = df[[
-        "sequence",
-        "motion_mean",
-        "motion_std",
-        "motion_max",
-        "high_motion_frames",
-        "pairs_processed"
-    ]]
+            if len(frames) < 2:
+                continue
+
+            print(f"Processando: {class_name}/{sequence_dir.name}")
+
+            features = process_sequence(frames)
+
+            if features is None:
+                continue
+
+            features["class"] = class_name
+            features["sequence"] = sequence_dir.name
+
+            results.append(features)
+
+    df = pd.DataFrame(results)
     df.to_csv(output_path, index=False)
 
-    print(f"Motion features extraídas com sucesso: {output_path}")
+    print(f"\nTotal de sequências processadas: {len(results)}")
+    print("Extração de motion concluída.")
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--input_dir", required=True)
+    parser.add_argument("--output_path", required=True)
+
+    args = parser.parse_args()
+
+    extract_features(args.input_dir, args.output_path)
